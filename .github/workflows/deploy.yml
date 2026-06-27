@@ -1,21 +1,38 @@
-name: Deploy Code to Release Branch 🚀
+name: Deploy to Firebase Hosting
+
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
-  build:
-    name: Push to Release Branch
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v3
 
-      # Workflow dispatch event that pushes the current version to the release branch.
-      # From here the secondary production deployment workflow will trigger to build the dependencies.
-      - name: Deploy 🚀
-        uses: JamesIves/github-pages-deploy-action@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
-          branch: releases/v4
-          folder: .
-          clean: false
-          single-commit: true
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build project
+        run: npm run build
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+
+      - name: Deploy to Firebase
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: seyade-pharmacy
+          channelId: live
